@@ -1,6 +1,5 @@
-package com.wallacen.usuario.business.dtos;
+package com.wallacen.agendador_tarefas.business.dto;
 
-import com.wallacen.usuario.infrastructure.entity.Endereco;
 import lombok.*;
 
 import java.util.List;
@@ -12,10 +11,8 @@ import java.util.List;
 @Builder
 public class UsuarioDto {
 
-    private String nome;
     private String email;
     private String senha;
-    private List<EnderecoDto> enderecos;
-    private List<TelefoneDto> telefones;
+
 
 }

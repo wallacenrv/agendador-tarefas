@@ -1,0 +1,180 @@
+┌──────────────────────┐
+|   CLIENTE (Front)    |
+|  POST /tarefas       |
+|  Authorization: Bearer X |
+└───────────┬──────────┘
+            |
+            v
+┌─────────────────────────────────┐
+| API AGENDADOR                  |
+| (porta 8081)                   |
+└─────────────────────────────────┘
+            |
+            | 1. Request chega com JWT
+            v
+┌──────────────────────────────┐
+| Spring Security Filter Chain |
+└───────┬──────────────────────┘
+        |
+        | 2. JwtRequestFilter lê HEADER
+        v
+┌──────────────────────────────┐
+| JwtRequestFilter (agendador) |
+| - extrai token (substring)   |
+| - extrai email do token      |
+└───────┬──────────────────────┘
+        |
+        | 3. Montar UserDetails
+        v
+┌──────────────────────────────┐
+| UserDetailsServiceImpl       |
+| (agendador)                  |
+| - chama API usuário via Feign|
+└───────┬──────────────────────┘
+        |
+        | 4. Feign envia request
+        | GET /usuario?email=...
+        | Authorization: Bearer X
+        v
+┌─────────────────────────────────┐
+| API USUÁRIO                     |
+| (porta 8080)                    |
+└─────────────────────────────────┘
+            |
+            | 5. Security valida token
+            v
+┌──────────────────────────────┐
+| JwtRequestFilter (usuario)   |
+| - extrai user do JWT         |
+| - carrega UserDetails        |
+└───────┬──────────────────────┘
+        |
+        | 6. Autentica e libera rota
+        v
+┌──────────────────────────────┐
+| DispatcherServlet (usuario)  |
+└───────┬──────────────────────┘
+        |
+        | 7. Chama controller
+        v
+┌──────────────────────────────┐
+| UsuarioController            |
+| buscaUsuarioPorEmail        |
+└───────┬──────────────────────┘
+        |
+        | 8. Busca no banco e retorna DTO
+        v
+┌──────────────────────────────┐
+| UsuarioDto                   |
+└───────┬──────────────────────┘
+        |
+        | 9. Feign recebe resposta
+        v
+┌──────────────────────────────┐
+| UserDetailsServiceImpl       |
+| (agendador)                  |
+└───────┬──────────────────────┘
+        |
+        | 10. Cria usuário autenticado
+        v
+┌──────────────────────────────┐
+| JwtRequestFilter             |
+| (agendador)                  |
+| -> SecurityContextHolder     |
+└───────┬──────────────────────┘
+        |
+        | 11. Libera requisição
+        v
+┌──────────────────────────────┐
+| DispatcherServlet (agendador)|
+└───────┬──────────────────────┘
+        |
+        | 12. Chama controller
+        v
+┌──────────────────────────────┐
+| TarefasController            |
+| gravarTarefa                |
+└───────┬──────────────────────┘
+        |
+        | 13. Salva no Mongo
+        v
+┌──────────────────────────────┐
+| TarefaService / Repository   |
+└──────────────────────────────┘
+
+Resposta JSON → CLIENTE ✅
+
+Quando o cliente chama:
+
+@PostMapping
+public ResponseEntity<TarefaDto> gravarTarefa(@RequestBody TarefaDto tarefaDto,
+                                              @RequestHeader("Authorization") String token){
+    return ResponseEntity.ok(tarefaService.gravarTarefa(token, tarefaDto));
+}
+
+O que realmente acontece?
+
+A sua controller NÃO é chamada direto.
+
+O fluxo real é:
+
+O cliente envia a requisição
+POST /tarefas com Authorization: Bearer <token>
+
+Antes do Spring MVC (Controllers), a requisição passa pelo Filter Chain do Spring Security
+
+Seu JwtRequestFilter roda aqui:
+
+@Override
+protected void doFilterInternal(...)
+
+
+Ele:
+
+lê o header Authorization
+
+extrai o JWT
+
+extrai o email do usuário
+
+valida o token
+
+chama a outra API via Feign pra validar o usuário
+
+cria UsernamePasswordAuthenticationToken
+
+coloca no SecurityContextHolder
+
+Só depois disso, se tudo estiver válido, a requisição é liberada e o Spring chama seu Controller:
+
+gravarTarefa(...)
+
+Então, respondendo direto:
+
+"quando o cliente faz o POST, o JwtRequestFilter intercepta?"
+
+Sim. Sempre.
+
+Antes do gravarTarefa, o fluxo passa por:
+
+Cliente -> Security Filters -> JwtRequestFilter -> SecurityContext -> Controller
+
+
+Se o token for inválido, vencer, faltar o prefixo Bearer, ou o Feign falhar validando o usuário…
+o Controller nunca é chamado.
+
+Metáfora rápida
+
+Pensa assim:
+
+Controller = sala do servidor
+
+JwtRequestFilter = segurança na porta
+
+JWT = crachá
+
+Feign validando com a outra API = segurança ligando pra RH pra confirmar
+
+Se o crachá é falso → RH diz "não conheço" → segurança barra antes da porta.
+
+Se quiser, agora posso te montar o diagrama só do ciclo de uma requisição dentro do agendador, tipo:

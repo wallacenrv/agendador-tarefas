@@ -1,31 +1,30 @@
 package com.wallacen.agendador_tarefas.infrastructure.security;
 
-import com.wallacen.usuario.infrastructure.entity.Usuario;
-import com.wallacen.usuario.infrastructure.repository.UsuarioRepository;
+import com.wallacen.agendador_tarefas.business.dto.UsuarioDto;
+import com.wallacen.agendador_tarefas.infrastructure.client.UsuarioClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserDetailsServiceImpl implements UserDetailsService {
+public class UserDetailsServiceImpl {
 
-    // Repositório para acessar dados de usuário no banco de dados
-    @Autowired
-    private UsuarioRepository usuarioRepository;
 
-    // Implementação do método para carregar detalhes do usuário pelo e-mail
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Busca o usuário no banco de dados pelo e-mail
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
+    private final UsuarioClient usuarioClient;
 
-        // Cria e retorna um objeto UserDetails com base no usuário encontrado
-        return org.springframework.security.core.userdetails.User
-                .withUsername(usuario.getEmail()) // Define o nome de usuário como o e-mail
-                .password(usuario.getSenha()) // Define a senha do usuário
+    public UserDetailsServiceImpl(UsuarioClient usuarioClient) {
+        this.usuarioClient = usuarioClient;
+    }
+
+
+    public UserDetails carregaroDadosDosUsuarios(String email, String token){
+
+        UsuarioDto usuarioDto = usuarioClient.buscaUsuarioPorEmail(email,"Bearer " + token);
+        return User
+                .withUsername(usuarioDto.getEmail()) // Define o nome de usuário como o e-mail
+                .password(usuarioDto.getSenha()) // Define a senha do usuário
                 .build(); // Constrói o objeto UserDetails
     }
 }
+
