@@ -2,7 +2,6 @@ package com.wallacen.agendador_tarefas.infrastructure.service;
 
 import com.wallacen.agendador_tarefas.business.dto.TarefaDto;
 import com.wallacen.agendador_tarefas.business.dto.mapper.TarefaConverter;
-import com.wallacen.agendador_tarefas.infrastructure.client.UsuarioClient;
 import com.wallacen.agendador_tarefas.infrastructure.entity.Tarefas;
 import com.wallacen.agendador_tarefas.infrastructure.enums.StatusNotificacao;
 import com.wallacen.agendador_tarefas.infrastructure.repository.TarefasRepository;
@@ -11,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,11 +26,17 @@ public class TarefaService {
         tarefaDto.setDataCriacao(LocalDateTime.now());
         tarefaDto.setStatusNotificacao(StatusNotificacao.PENDENTE);
         tarefaDto.setEmailUsuario(email);
-
-
         Tarefas tarefa = tarefaConverter.paraTarefa(tarefaDto);
-
         return tarefaConverter.paraTarefaDto(
                 tarefasRepository.save(tarefa));
+    }
+
+public List<TarefaDto> buscaTarefasAgendadasPorPeriodo(LocalDateTime dataInicial, LocalDateTime dataFinal){
+    return tarefaConverter.paraListTarefaDto(tarefasRepository.findByDataEventoBetween(dataInicial, dataFinal));
+}
+
+    public List<TarefaDto> buscaTarefasPorEmail(String token){
+        String email = jwtUtil.extractUsername(token.substring(7));
+        return tarefaConverter.paraListTarefaDto(tarefasRepository.findByemailUsuario(email));
     }
 }
