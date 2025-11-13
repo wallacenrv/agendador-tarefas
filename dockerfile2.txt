@@ -1,0 +1,31 @@
+# Etapa de construção (Build Phase)
+# Usa a imagem base do Gradle com o JDK 17 para compilar o projeto
+FROM gradle:7.5-jdk17 AS build
+
+# Define o diretório de trabalho dentro do container como /app
+WORKDIR /app
+
+# Copia o conteúdo do diretório local para o container no diretório /app
+COPY . .
+
+# Executa o comando Gradle para compilar o projeto.
+# A opção --no-daemon evita que o Gradle execute o daemon em segundo plano, tornando o processo mais rápido e isolado.
+RUN gradle build --no-daemon
+
+# Etapa final (Final Image Phase)
+# Usa uma imagem base do OpenJDK 17 com Alpine Linux para criar a imagem final
+FROM openjdk:17-jdk-alpine
+
+# Define o diretório de trabalho dentro da imagem final
+WORKDIR /app
+
+# Copia o arquivo .jar gerado pela fase de construção para o diretório /app na imagem final
+# O arquivo .jar gerado está no diretório /app/build/libs/ e é copiado com o nome agendador-tarefas.jar
+COPY --from=build /app/build/libs/*.jar /app/agendador-tarefas.jar
+
+# Expõe a porta 8081 no container para que a aplicação seja acessível de fora
+EXPOSE 8081
+
+# Define o comando que será executado quando o container for iniciado:
+# Inicia o aplicativo Java utilizando o arquivo .jar copiado
+CMD ["java", "-jar", "/app/agendador-tarefas.jar"]
