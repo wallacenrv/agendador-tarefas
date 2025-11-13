@@ -1,6 +1,7 @@
 package com.wallacen.agendador_tarefas.controller;
 
 import com.wallacen.agendador_tarefas.business.dto.TarefaDto;
+import com.wallacen.agendador_tarefas.infrastructure.enums.StatusNotificacao;
 import com.wallacen.agendador_tarefas.infrastructure.service.TarefaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -35,6 +36,22 @@ public class TarefasController {
         return ResponseEntity.ok(tarefaService.buscaTarefasPorEmail(token));
     }
 
+    @DeleteMapping
+    public ResponseEntity<Void> deletarTarefaPorId(@RequestParam String id){
+        tarefaService.apagarTarefa(id);
+        return ResponseEntity.ok().build();
+    }
 
+    @PatchMapping
+    public ResponseEntity<TarefaDto> alteraStatusNotificacao(@RequestParam("status")StatusNotificacao status,
+                                                             @RequestParam("id")String id){
+        return ResponseEntity.ok(tarefaService.alterarStatus(status, id));
+    }
+
+    @PutMapping
+    public ResponseEntity<TarefaDto> alterarTarefa(@RequestBody TarefaDto tarefaDto,
+                                                   @RequestParam("id")String id){
+        return ResponseEntity.ok(tarefaService.updateTarefas(tarefaDto, id));
+    }
 
 }
