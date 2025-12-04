@@ -13,5 +13,5 @@ import java.util.Optional;
 public interface TarefasRepository extends MongoRepository<Tarefas, String> {
 
     List<Tarefas> findByDataEventoBetweenAndStatusNotificacao(LocalDateTime dataInicial, LocalDateTime dataFinal, StatusNotificacao statusNotificacao);
-    List<Tarefas> findByemailUsuario(String emailUsuario);
+    List<Tarefas> findByEmailUsuario(String emailUsuario);
 }

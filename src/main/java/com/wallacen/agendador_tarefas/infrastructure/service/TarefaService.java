@@ -29,7 +29,7 @@ public class TarefaService {
         String email = jwtUtil.extractUsername(token.substring(7));
         tarefaDto.setDataCriacao(LocalDateTime.now());
         tarefaDto.setStatusNotificacao(StatusNotificacao.PENDENTE);
-        //tarefaDto.setEmailUsuario(email);
+     //   tarefaDto.setEmailUsuario(email);
         tarefaDto.setEmailUsuario(tarefaDto.getEmailUsuario());
         Tarefas tarefa = tarefaConverter.paraTarefa(tarefaDto);
         return tarefaConverter.paraTarefaDto(
@@ -42,7 +42,7 @@ public List<TarefaDto> buscaTarefasAgendadasPorPeriodo(LocalDateTime dataInicial
 
     public List<TarefaDto> buscaTarefasPorEmail(String token){
         String email = jwtUtil.extractUsername(token.substring(7));
-        return tarefaConverter.paraListTarefaDto(tarefasRepository.findByemailUsuario(email));
+        return tarefaConverter.paraListTarefaDto(tarefasRepository.findByEmailUsuario(email));
     }
 
     public void apagarTarefa(String id){
